@@ -77,7 +77,33 @@ download_polecat(local_dir = "my/data/dir", years = 2023, skip_existing = TRUE)
 
 This will download the files as they are, namely the current year weekly files will remain unzipped, and the historical data yearly ZIP archives will remain zipped. However, the "skip_existing" functionality _should_ be able to handle things correctly if you zip/unzip various files, see `?download_polecat` for more details.
 
-The package also include information from the [PLOVER ontology](https://github.com/openeventdata/PLOVER/blob/master/PLOVER_MANUAL.pdf):
+Once you have the files, use `read_polecat()` to load them into R:
+
+```{r eval=FALSE}
+# Read all files in a directory into a single data frame
+dat <- read_polecat("my/data/dir")
+
+# Read only specific years
+dat <- read_polecat("my/data/dir", years = 2022:2023)
+
+# Read a single file
+dat <- read_polecat("my/data/dir/ngecEvents.20230103111842.Release603.DV.txt")
+```
+
+The same event can appear in multiple news stories, producing duplicate rows. Use `deduplicate_polecat()` to remove them:
+
+```{r eval=FALSE}
+dat_deduped <- deduplicate_polecat(dat)
+```
+
+Some columns (like `context`) may hold multiple semicolon-separated values. Use `expand_polecat_col()` to convert to long format:
+
+```{r eval=FALSE}
+# One row per context value
+dat_long <- expand_polecat_col(dat, "context")
+```
+
+The package also includes information from the [PLOVER ontology](https://github.com/openeventdata/PLOVER/blob/master/PLOVER_MANUAL.pdf):
 
 ```{r example}
 library(rpolecat)
