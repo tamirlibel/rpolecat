@@ -50,7 +50,7 @@
 read_polecat <- function(path, years = NULL, verbose = TRUE) {
   if (dir.exists(path)) {
     all_files <- dir(path, full.names = TRUE)
-    polecat_files <- all_files[grepl("ngecEvents.*\\.txt$|ngecEventsDV.*\\.zip$",
+    polecat_files <- all_files[grepl("ngecEvents.*\\.txt$|ngecEvents.*\\.txt\\.gz$|ngecEventsDV.*\\.zip$",
                                      basename(all_files))]
 
     if (!is.null(years)) {
@@ -81,10 +81,13 @@ read_polecat <- function(path, years = NULL, verbose = TRUE) {
 }
 
 
-# Internal: read a single POLECAT file (.txt or .zip)
+# Internal: read a single POLECAT file (.txt, .txt.gz, or .zip)
 read_polecat_file <- function(path, verbose = TRUE) {
   if (grepl("\\.zip$", path)) {
     read_polecat_zip(path, verbose = verbose)
+  } else if (grepl("\\.gz$", path)) {
+    if (verbose) cat(sprintf("Reading '%s'\n", basename(path)))
+    read_polecat_tsv(gzfile(path))
   } else {
     if (verbose) cat(sprintf("Reading '%s'\n", basename(path)))
     read_polecat_tsv(path)
