@@ -1,0 +1,14 @@
+Title: NLP Web Scraper
+Description: Shiny app that uses the Claude API to translate natural language
+    web scraping instructions into executable R code.  Supports static pages
+    (rvest) and dynamic JavaScript-rendered pages (RSelenium).
+Depends:
+    shiny,
+    httr,
+    jsonlite,
+    rvest,
+    R.utils,
+    bslib,
+    DT
+Suggests:
+    RSelenium
