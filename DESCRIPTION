@@ -10,12 +10,22 @@ Authors@R: c(
            email = "bagozzib@udel.edu")
     )
 Maintainer: Andreas Beger <andy@basilanalytics.com>
-Description: Download the POLECAT data from Dataverse. 
+Description: Download the POLECAT data from Dataverse. Includes an NLP-powered
+    web scraper that uses LLM APIs to translate natural language instructions
+    into R scraping code for both static (rvest) and dynamic (RSelenium) pages.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: 
+Depends:
     R (>= 2.10)
 RoxygenNote: 7.2.3
-Imports: 
-    dataverse
+Imports:
+    dataverse,
+    httr,
+    jsonlite,
+    rvest,
+    R.utils
+Suggests:
+    RSelenium,
+    shiny,
+    DT
