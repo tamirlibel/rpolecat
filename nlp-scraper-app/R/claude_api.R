@@ -85,7 +85,6 @@ build_user_prompt <- function(url, instruction, page_html, method) {
   prompt <- sprintf("URL: %s\nInstruction: %s\nMethod: %s", url, instruction, method)
 
   if (!is.null(page_html) && nzchar(page_html)) {
-    # Truncate to ~8 000 chars so we don't blow the context window
     if (nchar(page_html) > 8000) {
       page_html <- paste0(substr(page_html, 1, 8000), "\n... [truncated]")
     }
@@ -99,17 +98,17 @@ build_user_prompt <- function(url, instruction, page_html, method) {
 # ── Response parser ───────────────────────────────────────────────────────────
 
 parse_response <- function(text) {
-  # Pull out the first ```r ... ``` block
-  m <- regmatches(text, regexpr("```[rR]?\n(.*?)```", text, perl = TRUE))
+  # (?s) enables DOTALL so . matches newlines — critical for multi-line code
+  code_pattern <- "(?s)```[rR]?\\n(.*?)```"
+  m <- regmatches(text, regexpr(code_pattern, text, perl = TRUE))
 
   if (length(m) > 0 && nzchar(m)) {
-    code <- sub("^```[rR]?\n", "", m)
-    code <- sub("\n?```$", "", code)
+    code <- sub("^```[rR]?\\n", "", m)
+    code <- sub("\\n?```$", "", code)
   } else {
     code <- text
   }
 
-  explanation <- trimws(gsub("```[rR]?\n.*?```", "", text, perl = TRUE))
-
+  explanation <- trimws(gsub(code_pattern, "", text, perl = TRUE))
   list(code = code, explanation = explanation)
 }
