@@ -1,21 +1,40 @@
 Package: rpolecat
 Type: Package
 Title: Download and Transform the POLECAT Event Data
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(
     person(given = "Andreas", family = "Beger", role = c("cre", "aut"),
-           email = "andy@basilanalytics.com", 
+           email = "andy@basilanalytics.com",
            comment = c(ORCID = "0000-0003-1883-3169")),
     person(given = "Benjamin E.", family = "Bagozzi", role = c("aut"),
            email = "bagozzib@udel.edu")
     )
 Maintainer: Andreas Beger <andy@basilanalytics.com>
-Description: Download the POLECAT data from Dataverse. 
+Description: Download, manage, and analyze the POLECAT political event data
+    from Harvard Dataverse. Provides functions for downloading and updating
+    local data, filtering and aggregating events, mapping events to quad
+    categories, database storage via DuckDB or SQLite, country code
+    translation, and geocoding events to GADM administrative units.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: 
+Depends:
     R (>= 2.10)
 RoxygenNote: 7.2.3
-Imports: 
-    dataverse
+Imports:
+    dataverse,
+    stats,
+    utils
+Suggests:
+    countrycode,
+    DBI,
+    duckdb,
+    geodata,
+    knitr,
+    rmarkdown,
+    RSQLite,
+    sf,
+    testthat (>= 3.0.0),
+    withr
+Config/testthat/edition: 3
+VignetteBuilder: knitr
