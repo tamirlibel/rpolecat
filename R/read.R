@@ -50,15 +50,17 @@
 read_polecat <- function(path, years = NULL, verbose = TRUE) {
   if (dir.exists(path)) {
     all_files <- dir(path, full.names = TRUE)
-    polecat_files <- all_files[grepl("ngecEvents.*\\.txt$|ngecEvents.*\\.txt\\.gz$|ngecEventsDV.*\\.zip$",
-                                     basename(all_files))]
+    polecat_files <- all_files[grepl(
+      paste0(POLECAT_FILE_PATTERN, ".*\\.txt$|", POLECAT_FILE_PATTERN,
+             ".*\\.txt\\.gz$|", POLECAT_FILE_PATTERN, "DV.*\\.zip$"),
+      basename(all_files)
+    )]
 
     if (!is.null(years)) {
       years <- as.integer(years)
       years_pattern <- paste0(years, collapse = "|")
-      year_match <- regmatches(basename(polecat_files),
-                               regexpr("[0-9]{4}", basename(polecat_files)))
-      polecat_files <- polecat_files[as.integer(year_match) %in% years]
+      year_match <- extract_data_year(basename(polecat_files))
+      polecat_files <- polecat_files[year_match %in% years]
     }
 
     if (length(polecat_files) == 0) {
@@ -124,7 +126,8 @@ read_polecat_tsv <- function(path) {
   # possessive forms like "Merkel's")
   dat <- utils::read.table(path, sep = "\t", header = TRUE,
                            quote = "\"", fill = TRUE,
-                           stringsAsFactors = FALSE)
+                           stringsAsFactors = FALSE,
+                           fileEncoding = "UTF-8")
 
   # Some files have excess trailing tabs, creating empty columns with names
   # like "X", "X.1", etc. Drop any columns that are entirely NA or empty.

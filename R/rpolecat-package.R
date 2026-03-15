@@ -18,5 +18,7 @@
 }
 
 ## usethis namespace: start
+#' @importFrom cli cli_abort cli_alert_info cli_alert_success cli_alert_warning
+#'   cli_h2 cli_h3 cli_progress_step cli_text cli_ul cli_warn
 ## usethis namespace: end
 NULL

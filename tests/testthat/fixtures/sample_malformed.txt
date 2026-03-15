@@ -1,0 +1,3 @@
+event_id	story_date	source	source_actor	source_agent	source_country	target	target_actor	target_agent	target_country	event_type	mode	context	latitude	longitude	goldstein	url
+EVT-0001	2023-01-15	USA/GOV	GOV	president	USA	RUS/GOV	GOV	minister	RUS	accuse	conventional	political	38.9072	-77.0369	-2.0	https://example.com/1
+EVT-0002	2023-02-20	GBR/MIL	MIL	Merkel's commander	GBR	FRA/GOV	GOV	president	FRA	consult	conventional	military	51.5074	-0.1278	3.0	https://example.com/2

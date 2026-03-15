@@ -22,14 +22,17 @@ Depends:
     R (>= 2.10)
 RoxygenNote: 7.2.3
 Imports:
-    dataverse,
+    cli,
+    httr2,
     stats,
     utils
 Suggests:
+    arrow,
     countrycode,
     DBI,
     duckdb,
     geodata,
+    httptest2,
     knitr,
     rmarkdown,
     RSQLite,

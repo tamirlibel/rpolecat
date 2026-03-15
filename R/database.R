@@ -14,6 +14,8 @@
 #' @param backend Database backend to use: \code{"duckdb"} (default) or
 #'   \code{"sqlite"}.
 #' @param years Optional numeric vector to restrict to specific years.
+#' @param overwrite Logical; if \code{TRUE}, overwrite an existing database.
+#'   Defaults to \code{FALSE}.
 #' @param verbose Print progress messages?
 #'
 #' @returns Invisibly returns the path to the created database.
@@ -26,13 +28,17 @@
 #' @md
 create_polecat_db <- function(db_path, data_dir = NULL,
                               backend = "duckdb", years = NULL,
-                              verbose = TRUE) {
+                              overwrite = FALSE, verbose = TRUE) {
   data_dir <- resolve_data_dir(data_dir)
   check_db_packages(backend)
 
-  if (file.exists(db_path)) {
+  if (file.exists(db_path) && !overwrite) {
     stop("Database already exists at '", db_path, "'. ",
-         "Delete it first or use sync_db_with_files().", call. = FALSE)
+         "Set overwrite = TRUE or use sync_db_with_files().", call. = FALSE)
+  }
+  if (file.exists(db_path) && overwrite) {
+    file.remove(db_path)
+    if (verbose) cli::cli_alert_info("Removed existing database at {.path {db_path}}")
   }
 
   if (verbose) cat("Reading POLECAT data files...\n")

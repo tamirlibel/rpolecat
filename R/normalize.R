@@ -41,6 +41,11 @@ normalize_polecat <- function(x, parse_dates = TRUE, add_year = TRUE,
   if (parse_dates && "story_date" %in% names(x)) {
     if (!inherits(x$story_date, "Date")) {
       x$story_date <- as.Date(x$story_date)
+      n_na <- sum(is.na(x$story_date))
+      if (n_na > 0) {
+        warning(n_na, " story_date value(s) could not be parsed to Date",
+                call. = FALSE)
+      }
     }
   }
 

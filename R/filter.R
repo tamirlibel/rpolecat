@@ -86,7 +86,9 @@ filter_polecat <- function(x, countries = NULL, src_countries = NULL,
 
   # Context filter (handles semicolon-separated values)
   if (!is.null(contexts) && "context" %in% names(x)) {
-    ctx_pattern <- paste0("\\b(", paste(contexts, collapse = "|"), ")\\b")
+    # Escape regex special characters in user-provided context values
+    escaped <- gsub("([\\[\\](){}.*+?^$|\\\\])", "\\\\\\1", contexts)
+    ctx_pattern <- paste0("\\b(", paste(escaped, collapse = "|"), ")\\b")
     keep <- keep & grepl(ctx_pattern, x$context, ignore.case = TRUE)
   }
 

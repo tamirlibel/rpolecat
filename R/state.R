@@ -28,7 +28,7 @@ get_local_state <- function(data_dir = NULL) {
   }
 
   all_files <- dir(data_dir, full.names = TRUE)
-  polecat_files <- all_files[grepl("ngecEvents", basename(all_files))]
+  polecat_files <- all_files[grepl(POLECAT_FILE_PATTERN, basename(all_files))]
 
   if (length(polecat_files) == 0) {
     message("No POLECAT files found in '", data_dir, "'")
@@ -44,7 +44,7 @@ get_local_state <- function(data_dir = NULL) {
 
   info <- file.info(polecat_files)
   fnames <- basename(polecat_files)
-  years <- as.integer(regmatches(fnames, regexpr("[0-9]{4}", fnames)))
+  years <- extract_data_year(fnames)
   compressed <- grepl("\\.zip$|\\.gz$", fnames)
 
   data.frame(

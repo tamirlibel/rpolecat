@@ -34,7 +34,7 @@ purge_polecat <- function(data_dir = NULL, db_path = NULL,
 
     if (!is.null(dir_to_purge) && dir.exists(dir_to_purge)) {
       all_files <- dir(dir_to_purge, full.names = TRUE)
-      polecat_files <- all_files[grepl("ngecEvents", basename(all_files))]
+      polecat_files <- all_files[grepl(POLECAT_FILE_PATTERN, basename(all_files))]
 
       if (length(polecat_files) > 0) {
         if (confirm && interactive()) {

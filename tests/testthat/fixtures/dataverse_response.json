@@ -1,0 +1,33 @@
+{
+  "datasetVersion": {
+    "files": [
+      {
+        "label": "ngecEvents.20230103111842.Release603.DV.txt",
+        "version": 1,
+        "dataFile": {
+          "id": 12345,
+          "filename": "ngecEvents.20230103111842.Release603.DV.txt",
+          "creationDate": "2023-01-03"
+        }
+      },
+      {
+        "label": "ngecEventsDV-2022.txt.zip",
+        "version": 1,
+        "dataFile": {
+          "id": 12346,
+          "filename": "ngecEventsDV-2022.txt.zip",
+          "creationDate": "2023-01-01"
+        }
+      },
+      {
+        "label": "ngecEvents.20230210121500.Release604.DV.txt",
+        "version": 2,
+        "dataFile": {
+          "id": 12347,
+          "filename": "ngecEvents.20230210121500.Release604.DV.txt",
+          "creationDate": "2023-02-10"
+        }
+      }
+    ]
+  }
+}

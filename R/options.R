@@ -150,27 +150,35 @@ resolve_data_dir <- function(data_dir = NULL) {
 write_to_rprofile <- function(opts) {
   rprofile <- file.path(Sys.getenv("HOME"), ".Rprofile")
 
-  lines <- character(0)
-  if (file.exists(rprofile)) {
-    lines <- readLines(rprofile)
-  }
-
-  # Remove any existing rpolecat option lines
-  rpolecat_lines <- grepl("^options\\(rpolecat\\.", lines)
-  lines <- lines[!rpolecat_lines]
-
-  # Add new option lines
-  new_lines <- vapply(names(opts), function(nm) {
-    val <- opts[[nm]]
-    if (is.character(val)) {
-      sprintf('options(%s = "%s")', nm, val)
-    } else if (is.logical(val)) {
-      sprintf("options(%s = %s)", nm, toupper(as.character(val)))
-    } else {
-      sprintf("options(%s = %s)", nm, as.character(val))
+  tryCatch({
+    lines <- character(0)
+    if (file.exists(rprofile)) {
+      # Back up before modifying
+      backup <- paste0(rprofile, ".rpolecat-backup")
+      file.copy(rprofile, backup, overwrite = TRUE)
+      lines <- readLines(rprofile)
     }
-  }, character(1))
 
-  lines <- c(lines, "", "# rpolecat options", new_lines)
-  writeLines(lines, rprofile)
+    # Remove any existing rpolecat option lines
+    rpolecat_lines <- grepl("^options\\(rpolecat\\.", lines)
+    lines <- lines[!rpolecat_lines]
+
+    # Add new option lines
+    new_lines <- vapply(names(opts), function(nm) {
+      val <- opts[[nm]]
+      if (is.character(val)) {
+        sprintf('options(%s = "%s")', nm, val)
+      } else if (is.logical(val)) {
+        sprintf("options(%s = %s)", nm, toupper(as.character(val)))
+      } else {
+        sprintf("options(%s = %s)", nm, as.character(val))
+      }
+    }, character(1))
+
+    lines <- c(lines, "", "# rpolecat options", new_lines)
+    writeLines(lines, rprofile)
+  }, error = function(e) {
+    warning("Failed to write to .Rprofile: ", conditionMessage(e),
+            call. = FALSE)
+  })
 }

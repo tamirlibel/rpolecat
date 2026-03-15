@@ -4,10 +4,8 @@
 #'
 #' @param print Print the token and server? (They are invisibly returned as well.)
 #'
-#' @details Interaction with dataverse depends on another R package, the
-#' official IQSS R dataverse client. That package requires two environment
-#' variables to work correctly, a DATAVERSE_KEY variable and the
-#' DATAVERSE_SERVER to use.
+#' @details Interaction with Dataverse requires two environment variables:
+#' \code{DATAVERSE_KEY} and \code{DATAVERSE_SERVER}.
 #'
 #' The links below have the latest official information, but generally what
 #' needs to be done:
@@ -22,8 +20,6 @@
 #'
 #' \url{https://guides.dataverse.org/en/latest/user/account.html#api-token}
 #'
-#' \url{https://github.com/IQSS/dataverse-client-r#keys}
-#'
 #' NOTE that the token is sensitive and should not be publicly shared. I.e. don't
 #' put it on GitHub or GitLab.
 #'
@@ -33,13 +29,14 @@
 #' @export
 dataverse_api_token <- function(print = TRUE) {
   if (!check_api_token()) {
-    stop("API token or server are not set. See ?dataverse_api_token")
+    stop("API token or server are not set. See ?dataverse_api_token",
+         call. = FALSE)
   }
   token <- Sys.getenv("DATAVERSE_KEY")
   server <- Sys.getenv("DATAVERSE_SERVER")
   if (print) {
-    cat("Server:", ifelse(server=="", "<missing>", server), "\n")
-    cat("Token:", ifelse(token=="", "<missing>", token), "\n")
+    cli::cli_text("Server: {.url {server}}")
+    cli::cli_text("Token:  {.val {token}}")
   }
   invisible(list(token = token, server = server))
 }
@@ -49,8 +46,5 @@ check_api_token <- function() {
   token <- Sys.getenv("DATAVERSE_KEY")
   server <- Sys.getenv("DATAVERSE_SERVER")
   # return TRUE if both token and server are set, FALSE otherwise
-  token!="" & server!=""
+  token != "" & server != ""
 }
-
-
-

@@ -36,39 +36,48 @@ compress_polecat <- function(data_dir = NULL, action = "compress",
 
   if (action == "compress") {
     files <- dir(data_dir, pattern = "\\.txt$", full.names = TRUE)
-    # Only compress POLECAT files
-    files <- files[grepl("ngecEvents", basename(files))]
+    files <- files[grepl(POLECAT_FILE_PATTERN, basename(files))]
 
     if (length(files) == 0) {
-      message("No uncompressed POLECAT .txt files found.")
+      cli::cli_alert_info("No uncompressed POLECAT .txt files found.")
       return(invisible(character(0)))
     }
 
-    if (verbose) cat(sprintf("Compressing %d files...\n", length(files)))
+    if (verbose) cli::cli_alert_info("Compressing {length(files)} file{?s}...")
 
     out_files <- character(length(files))
     for (i in seq_along(files)) {
       out_path <- paste0(files[i], ".gz")
-      if (verbose) cat(sprintf("  %s -> %s\n", basename(files[i]), basename(out_path)))
+      if (verbose) cli::cli_progress_step("{basename(files[i])} -> {basename(out_path)}")
 
-      con_in  <- file(files[i], "rb")
-      con_out <- gzfile(out_path, "wb")
-      while (length(chunk <- readBin(con_in, "raw", n = 65536L)) > 0) {
-        writeBin(chunk, con_out)
-      }
-      close(con_in)
-      close(con_out)
+      tryCatch({
+        con_in  <- file(files[i], "rb")
+        on.exit(close(con_in), add = TRUE)
+        con_out <- gzfile(out_path, "wb")
+        on.exit(close(con_out), add = TRUE)
+        while (length(chunk <- readBin(con_in, "raw", n = 65536L)) > 0) {
+          writeBin(chunk, con_out)
+        }
+        close(con_out)
+        close(con_in)
+        on.exit()  # clear on.exit since we closed manually
 
-      if (remove) file.remove(files[i])
-      out_files[i] <- out_path
+        # Verify output
+        if (!file.exists(out_path) || file.info(out_path)$size == 0) {
+          cli::cli_warn("Compression produced empty file: {.file {out_path}}")
+          next
+        }
+
+        if (remove) file.remove(files[i])
+        out_files[i] <- out_path
+      }, error = function(e) {
+        cli::cli_warn("Failed to compress {.file {basename(files[i])}}: {conditionMessage(e)}")
+      })
     }
 
     if (verbose) {
-      orig_size <- sum(file.info(files)$size, na.rm = TRUE)
-      new_size  <- sum(file.info(out_files)$size)
-      cat(sprintf("Done. Saved %.1f MB (%.0f%% reduction)\n",
-                  (orig_size - new_size) / 1e6,
-                  (1 - new_size / orig_size) * 100))
+      new_size <- sum(file.info(out_files[out_files != ""])$size, na.rm = TRUE)
+      cli::cli_alert_success("Compression complete.")
     }
 
     return(invisible(out_files))
@@ -76,32 +85,39 @@ compress_polecat <- function(data_dir = NULL, action = "compress",
 
   # Decompress
   files <- dir(data_dir, pattern = "\\.txt\\.gz$", full.names = TRUE)
-  files <- files[grepl("ngecEvents", basename(files))]
+  files <- files[grepl(POLECAT_FILE_PATTERN, basename(files))]
 
   if (length(files) == 0) {
-    message("No compressed POLECAT .txt.gz files found.")
+    cli::cli_alert_info("No compressed POLECAT .txt.gz files found.")
     return(invisible(character(0)))
   }
 
-  if (verbose) cat(sprintf("Decompressing %d files...\n", length(files)))
+  if (verbose) cli::cli_alert_info("Decompressing {length(files)} file{?s}...")
 
   out_files <- character(length(files))
   for (i in seq_along(files)) {
     out_path <- sub("\\.gz$", "", files[i])
-    if (verbose) cat(sprintf("  %s -> %s\n", basename(files[i]), basename(out_path)))
+    if (verbose) cli::cli_progress_step("{basename(files[i])} -> {basename(out_path)}")
 
-    con_in  <- gzfile(files[i], "rb")
-    con_out <- file(out_path, "wb")
-    while (length(chunk <- readBin(con_in, "raw", n = 65536L)) > 0) {
-      writeBin(chunk, con_out)
-    }
-    close(con_in)
-    close(con_out)
+    tryCatch({
+      con_in  <- gzfile(files[i], "rb")
+      on.exit(close(con_in), add = TRUE)
+      con_out <- file(out_path, "wb")
+      on.exit(close(con_out), add = TRUE)
+      while (length(chunk <- readBin(con_in, "raw", n = 65536L)) > 0) {
+        writeBin(chunk, con_out)
+      }
+      close(con_out)
+      close(con_in)
+      on.exit()
 
-    if (remove) file.remove(files[i])
-    out_files[i] <- out_path
+      if (remove) file.remove(files[i])
+      out_files[i] <- out_path
+    }, error = function(e) {
+      cli::cli_warn("Failed to decompress {.file {basename(files[i])}}: {conditionMessage(e)}")
+    })
   }
 
-  if (verbose) cat("Done.\n")
+  if (verbose) cli::cli_alert_success("Decompression complete.")
   invisible(out_files)
 }

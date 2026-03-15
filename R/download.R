@@ -32,7 +32,7 @@
 #'   # Next time, to avoid re-downloading files you already have:
 #'   download_polecat("my/data/dir", skip_existing = TRUE)
 #'
-#'   # To download only fresh data fur the current year, or avoid re-downloading
+#'   # To download only fresh data for the current year, or avoid re-downloading
 #'   # the yearly historical data files if you unzipped them:
 #'   download_polecat("my/data/dir", years = 2023, skip_existing = TRUE)
 #' }
@@ -46,66 +46,78 @@ download_polecat <- function(local_dir, years = NULL, skip_existing = TRUE,
     "'verbose' must be logical" = is.logical(verbose),
     "'dryrun' must be logical" = is.logical(dryrun)
   )
+
   if (!dir.exists(local_dir)) {
-    msg <- sprintf("Directory '%s' does not exist, create it first with `dir.create(%s)`",
-                   local_dir, local_dir)
-    stop(msg)
+    dir.create(local_dir, recursive = TRUE)
+    if (verbose) cli::cli_alert_info("Created directory: {.path {local_dir}}")
   }
 
-  dataverse_files <- get_dataverse_file_list()
+  if (verbose) cli::cli_alert_info("Querying Dataverse for file listing...")
+  dataverse_files <- tryCatch(
+    get_dataverse_file_list(),
+    error = function(e) {
+      cli::cli_abort("Failed to query Dataverse: {conditionMessage(e)}")
+    }
+  )
 
   if (!is.null(years)) {
     years <- as.integer(years)
     dataverse_files <- dataverse_files[dataverse_files$data_year %in% years, ]
   }
 
-  # Do we need to check for an exclude already present local files?
-  skip_n <- NA_integer_  # initialize in case we do a dry run and need it for message
+  # Check for existing local files
+  skip_n <- NA_integer_
   if (skip_existing) {
     local_files <- dir(local_dir)
+    comparison <- compare_file_lists(dataverse_files, local_files)
+    skip_n <- nrow(comparison$already_present)
+    dataverse_files <- comparison$to_download
 
-    # remove any .zip or .gz extensions in case the files are locally zipped
-    local_files <- gsub("\\.zip$|\\.gz$", "", local_files)
-
-    already_present <- dataverse_files$label %in% local_files
-    if (any(already_present)) {
-      skip_n <- sum(already_present)
-      dataverse_files <- dataverse_files[!already_present, ]
-
-      # don't print this if dryrun because we'll print it below
-      if (verbose & !dryrun) {
-        cat(sprintf("Skipping download for %s files that are already present\n",
-                    skip_n))
-      }
+    if (skip_n > 0 && verbose && !dryrun) {
+      cli::cli_alert_info("Skipping {skip_n} file{?s} already present locally")
     }
   }
 
   # Early exit if this is a dryrun
   if (dryrun) {
-    cat("Dryrun\n")
-    cat(sprintf("Local dir is '%s'\n", local_dir))
-    if (!is.na(skip_n)) {
-      cat(sprintf("Skipping download for %s files that are already present\n",
-                  skip_n))
+    cli::cli_h2("Dry run")
+    cli::cli_alert_info("Local dir: {.path {local_dir}}")
+    if (!is.na(skip_n) && skip_n > 0) {
+      cli::cli_alert_info("Skipping {skip_n} file{?s} already present")
     }
-    cat(paste0(
-      sprintf("Downloading %s files:\n", nrow(dataverse_files)),
-      paste0(dataverse_files$label, collapse = "\n")
-    ))
+    cli::cli_alert_info("Would download {nrow(dataverse_files)} file{?s}:")
+    if (nrow(dataverse_files) > 0) {
+      cli::cli_ul(dataverse_files$label)
+    }
     return(invisible(TRUE))
   }
 
-  for (i in seq_len(nrow(dataverse_files))) {
-    file_name <- dataverse_files$label[[i]]
-    file_path <- file.path(local_dir, file_name)
-    if (verbose) cat(paste0("Downloading '", file_name, "'\n"))
-    f <- dataverse::get_file(dataverse_files$id[[i]],
-                             dataset = get_polecat_doi(),
-                             format = NULL)
-    writeBin(f, file_path)
+  if (nrow(dataverse_files) == 0) {
+    if (verbose) cli::cli_alert_success("All files are up to date.")
+    return(invisible(TRUE))
   }
 
+  n_files <- nrow(dataverse_files)
+  if (verbose) cli::cli_alert_info("Downloading {n_files} file{?s}...")
+
+  for (i in seq_len(n_files)) {
+    file_name <- dataverse_files$label[[i]]
+    file_path <- file.path(local_dir, file_name)
+    if (verbose) {
+      cli::cli_progress_step("Downloading {.file {file_name}} ({i}/{n_files})")
+    }
+
+    success <- download_dataverse_file(
+      file_id   = dataverse_files$id[[i]],
+      dest_path = file_path,
+      progress  = verbose
+    )
+
+    if (!success) {
+      cli::cli_warn("Failed to download {.file {file_name}}")
+    }
+  }
+
+  if (verbose) cli::cli_alert_success("Download complete.")
   invisible(TRUE)
 }
-
-

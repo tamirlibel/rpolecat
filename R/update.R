@@ -47,55 +47,56 @@ update_polecat <- function(data_dir = NULL, years = NULL,
 
   if (!dir.exists(data_dir)) {
     dir.create(data_dir, recursive = TRUE)
-    if (verbose) message("Created directory: ", data_dir)
+    if (verbose) cli::cli_alert_info("Created directory: {.path {data_dir}}")
   }
 
   # Get remote state
-  if (verbose) cat("Querying Dataverse for current file listing...\n")
-  remote <- get_dataverse_file_list()
+  if (verbose) cli::cli_alert_info("Querying Dataverse for current file listing...")
+  remote <- tryCatch(
+    get_dataverse_file_list(),
+    error = function(e) {
+      cli::cli_abort("Failed to query Dataverse: {conditionMessage(e)}")
+    }
+  )
 
   if (!is.null(years)) {
     years <- as.integer(years)
     remote <- remote[remote$data_year %in% years, ]
   }
 
-  # Get local state
+  # Compare remote vs local
   local_files <- dir(data_dir)
-  # Strip .zip/.gz extensions for comparison
+  comparison <- compare_file_lists(remote, local_files)
+  to_download <- comparison$to_download
+  obsolete <- comparison$obsolete
 
-  local_base <- gsub("\\.zip$|\\.gz$", "", local_files)
-
-  # Determine what to download (remote files not present locally)
-  already_present <- remote$label %in% local_base | remote$label %in% local_files
-  to_download <- remote[!already_present, ]
-
-  # Determine what to delete (local polecat files not on remote)
-  polecat_local <- local_files[grepl("ngecEvents", local_files)]
-  polecat_local_base <- gsub("\\.zip$|\\.gz$", "", polecat_local)
-  obsolete <- polecat_local[!polecat_local_base %in% remote$label & !polecat_local %in% remote$label]
+  # Get local polecat file count
+  polecat_local <- local_files[grepl(POLECAT_FILE_PATTERN, local_files)]
 
   # Report
-  cat(sprintf("\nUpdate plan for '%s':\n", data_dir))
-  cat(sprintf("  Remote files:    %d\n", nrow(remote)))
-  cat(sprintf("  Local files:     %d\n", length(polecat_local)))
-  cat(sprintf("  To download:     %d\n", nrow(to_download)))
-  cat(sprintf("  Obsolete:        %d\n", length(obsolete)))
+  cli::cli_h2("Update plan for {.path {data_dir}}")
+  cli::cli_ul(c(
+    "Remote files:    {nrow(remote)}",
+    "Local files:     {length(polecat_local)}",
+    "To download:     {nrow(to_download)}",
+    "Obsolete:        {length(obsolete)}"
+  ))
 
   if (nrow(to_download) > 0) {
-    cat("\nFiles to download:\n")
-    cat(paste0("  ", to_download$label, collapse = "\n"), "\n")
+    cli::cli_h3("Files to download")
+    cli::cli_ul(to_download$label)
   }
 
   if (length(obsolete) > 0 && delete_obsolete) {
-    cat("\nFiles to delete:\n")
-    cat(paste0("  ", obsolete, collapse = "\n"), "\n")
+    cli::cli_h3("Files to delete")
+    cli::cli_ul(obsolete)
   } else if (length(obsolete) > 0) {
-    cat("\nObsolete files (set delete_obsolete = TRUE to remove):\n")
-    cat(paste0("  ", obsolete, collapse = "\n"), "\n")
+    cli::cli_h3("Obsolete files (set delete_obsolete = TRUE to remove)")
+    cli::cli_ul(obsolete)
   }
 
   if (dryrun) {
-    cat("\nDry run -- no changes made. Set dryrun = FALSE to execute.\n")
+    cli::cli_alert_warning("Dry run -- no changes made. Set dryrun = FALSE to execute.")
     return(invisible(list(
       to_download = to_download,
       to_delete   = if (delete_obsolete) obsolete else character(0)
@@ -104,29 +105,36 @@ update_polecat <- function(data_dir = NULL, years = NULL,
 
   # Execute downloads
   if (nrow(to_download) > 0) {
-    cat("\nDownloading...\n")
-    for (i in seq_len(nrow(to_download))) {
+    n_files <- nrow(to_download)
+    if (verbose) cli::cli_alert_info("Downloading {n_files} file{?s}...")
+    for (i in seq_len(n_files)) {
       file_name <- to_download$label[[i]]
       file_path <- file.path(data_dir, file_name)
-      if (verbose) cat(sprintf("  Downloading '%s'\n", file_name))
-      f <- dataverse::get_file(to_download$id[[i]],
-                               dataset = get_polecat_doi(),
-                               format = NULL)
-      writeBin(f, file_path)
+      if (verbose) {
+        cli::cli_progress_step("Downloading {.file {file_name}} ({i}/{n_files})")
+      }
+      success <- download_dataverse_file(
+        file_id   = to_download$id[[i]],
+        dest_path = file_path,
+        progress  = verbose
+      )
+      if (!success) {
+        cli::cli_warn("Failed to download {.file {file_name}}")
+      }
     }
   }
 
   # Execute deletions
   if (length(obsolete) > 0 && delete_obsolete) {
-    cat("\nDeleting obsolete files...\n")
+    if (verbose) cli::cli_alert_info("Deleting obsolete files...")
     for (fname in obsolete) {
       fpath <- file.path(data_dir, fname)
-      if (verbose) cat(sprintf("  Deleting '%s'\n", fname))
+      if (verbose) cli::cli_progress_step("Deleting {.file {fname}}")
       file.remove(fpath)
     }
   }
 
-  cat("\nUpdate complete.\n")
+  if (verbose) cli::cli_alert_success("Update complete.")
   invisible(list(
     to_download = to_download,
     to_delete   = if (delete_obsolete) obsolete else character(0)

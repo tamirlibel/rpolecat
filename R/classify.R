@@ -34,26 +34,7 @@ classify_quad <- function(x) {
     stop("Data must contain an 'event_type' column", call. = FALSE)
   }
 
-  quad_map <- c(
-    agree     = "Verbal Cooperation",
-    consult   = "Verbal Cooperation",
-    support   = "Verbal Cooperation",
-    concede   = "Verbal Cooperation",
-    cooperate = "Material Cooperation",
-    aid       = "Material Cooperation",
-    retreat   = "Material Cooperation",
-    request   = "Verbal Conflict",
-    accuse    = "Verbal Conflict",
-    reject    = "Verbal Conflict",
-    threaten  = "Verbal Conflict",
-    protest   = "Material Conflict",
-    sanction  = "Material Conflict",
-    mobilize  = "Material Conflict",
-    coerce    = "Material Conflict",
-    assault   = "Material Conflict"
-  )
-
-  x$quad_category <- quad_map[tolower(x$event_type)]
+  x$quad_category <- QUAD_MAP[tolower(x$event_type)]
   x
 }
 
@@ -74,24 +55,5 @@ classify_quad <- function(x) {
 #' @export
 #' @md
 get_quad <- function(event_type) {
-  quad_map <- c(
-    agree     = "Verbal Cooperation",
-    consult   = "Verbal Cooperation",
-    support   = "Verbal Cooperation",
-    concede   = "Verbal Cooperation",
-    cooperate = "Material Cooperation",
-    aid       = "Material Cooperation",
-    retreat   = "Material Cooperation",
-    request   = "Verbal Conflict",
-    accuse    = "Verbal Conflict",
-    reject    = "Verbal Conflict",
-    threaten  = "Verbal Conflict",
-    protest   = "Material Conflict",
-    sanction  = "Material Conflict",
-    mobilize  = "Material Conflict",
-    coerce    = "Material Conflict",
-    assault   = "Material Conflict"
-  )
-
-  quad_map[tolower(event_type)]
+  QUAD_MAP[tolower(event_type)]
 }
